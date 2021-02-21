@@ -11,7 +11,7 @@ def compute_children_entropy(class_tables):
 
     class_tables = np.array(class_tables).T
     n = np.sum(class_tables)
-    entropy = sum([(1.0*np.sum(class_tables[:,i])/(n))*(compute_entropy(class_tables[:,i])) for i in range(len(class_tables))])
+    entropy = sum([(1.0*np.sum(class_tables[:,i])/(n))*(compute_entropy(class_tables[:,i])) for i in range(class_tables.shape[1])])
 
     return entropy
 
@@ -32,7 +32,7 @@ def compute_children_class_error(class_tables):
 
     class_tables = np.array(class_tables).T
     n = np.sum(class_tables)
-    class_error = sum([(1.0*np.sum(class_tables[:,i])/n)*(compute_class_error(class_tables[:,i])) for i in range(len(class_tables))])
+    class_error = sum([(1.0*np.sum(class_tables[:,i])/n)*(compute_class_error(class_tables[:,i])) for i in range(class_tables.shape[1])])
 
     return class_error
 
@@ -53,7 +53,7 @@ def compute_children_gini(class_tables):
 
     class_tables = np.array(class_tables).T
     n = np.sum(class_tables)
-    gini_index = sum([(1.0*np.sum(class_tables[:,i])/(n))*(compute_gini(class_tables[:,i])) for i in range(len(class_tables))])
+    gini_index = sum([(1.0*np.sum(class_tables[:,i])/(n))*(compute_gini(class_tables[:,i])) for i in range(class_tables.shape[1])])
 
     return gini_index
 
