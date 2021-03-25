@@ -28,5 +28,12 @@ transforms = {
 loader_params = {
                 'bs': 10,
                 'shuffle': {'train': True, 'test': False}
-}
+                }
+
+optim_params = {
+                'SGD': {'lr':0.001, 'momentum': 0.9}
+                }
+
+OPTIM = 'SGD' 
+LOSS = 'CE' # type of criterion; CE: cross entropy loss, 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
