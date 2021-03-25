@@ -1,13 +1,18 @@
 import argparse
 import sys
-from data_loader.data_loaders import *
+from data_loader import get_loader
+import config
+#from trainer import Trainer
 
-parser = argparse.ArgumentParser()
+def main(config):
+    pass
 
-parser.add_argument('-b', type=int, default=128, help='batch size for dataloader')
+if __name__ == '__main__':
 
-args = parser.parse_args()
+    train_loader, val_loader = get_loader(config)
 
-train_loader, val_loader = get_loader(args)
+
+    
+
 
 

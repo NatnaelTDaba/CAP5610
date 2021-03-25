@@ -12,12 +12,17 @@ import config
 from .datasets import DiabeticRetinopathyDataset
 
 
-def get_loader(args, test=False):
+def get_loader(config, test=False):
+    """
+    Args: 
+        config (coinfguration object): Contains different parameters for training 
+
+    """
 
     # If test loader is desired, create and return DataLoader object for test images.
     if test:
         dataset = DiabeticRetinopathyDataset(config.TEST_IMG_PATH, transforms=config.transforms['test'], test=True)
-        test_loader = DataLoader(dataset, batch_size=args.b, shuffle=False)
+        test_loader = DataLoader(dataset, batch_size=config.loader_params['bs'], shuffle=config.loader_params['shuffle']['test'])
 
         return test_loader
 
@@ -36,8 +41,8 @@ def get_loader(args, test=False):
     valid_sampler = SubsetRandomSampler(valid_idx)
 
     # Create DataLoader object for both sets 
-    train_loader = DataLoader(train_dataset, batch_size=args.b, sampler=train_sampler, num_workers=config.NUM_WORKERS)
-    val_loader = DataLoader(val_dataset, batch_size=args.b, sampler=valid_sampler, num_workers=config.NUM_WORKERS)
+    train_loader = DataLoader(train_dataset, batch_size=config.loader_params['bs'], sampler=train_sampler, num_workers=config.NUM_WORKERS)
+    val_loader = DataLoader(val_dataset, batch_size=config.loader_params['bs'], sampler=valid_sampler, num_workers=config.NUM_WORKERS)
 
     return (train_loader, val_loader)
 

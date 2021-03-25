@@ -1,3 +1,4 @@
+import torch
 from torchvision import transforms
 
 DATA_DIR = './data/'
@@ -22,5 +23,10 @@ transforms = {
                 'test': transforms.Compose([
                     transforms.Resize(NEW_SIZE),
                     transforms.ToTensor()])
-
             }
+
+loader_params = {
+                'bs': 10,
+                'shuffle': {'train': True, 'test': False}
+}
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
