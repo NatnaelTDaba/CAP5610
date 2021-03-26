@@ -8,8 +8,6 @@ TEST_IMG_PATH = DATA_DIR+'test/'
 
 NEW_SIZE = (224, 224)
 
-NUM_WORKERS = 1
-
 transforms = {
                 'train': transforms.Compose([
                     transforms.Resize(NEW_SIZE),
@@ -26,14 +24,22 @@ transforms = {
             }
 
 loader_params = {
-                'bs': 10,
-                'shuffle': {'train': True, 'test': False}
+                    'bs': 128,
+                    'shuffle': {'train': True, 'test': False},
+                    'workers': 4
                 }
+
+OPTIM = 'SGD'
 
 optim_params = {
-                'SGD': {'lr':0.001, 'momentum': 0.9}
+                    OPTIM: {'lr':0.001, 'momentum': 0.9}
                 }
 
-OPTIM = 'SGD' 
+ 
+
 LOSS = 'CE' # type of criterion; CE: cross entropy loss, 
+
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+EPOCH = 1000
+

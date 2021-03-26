@@ -8,7 +8,6 @@ import sys
 import numpy as np
 sys.path.append('../')
 
-import config
 from .datasets import DiabeticRetinopathyDataset
 
 
@@ -41,8 +40,8 @@ def get_loader(config, test=False):
     valid_sampler = SubsetRandomSampler(valid_idx)
 
     # Create DataLoader object for both sets 
-    train_loader = DataLoader(train_dataset, batch_size=config.loader_params['bs'], sampler=train_sampler, num_workers=config.NUM_WORKERS)
-    val_loader = DataLoader(val_dataset, batch_size=config.loader_params['bs'], sampler=valid_sampler, num_workers=config.NUM_WORKERS)
+    train_loader = DataLoader(train_dataset, batch_size=config.loader_params['bs'], sampler=train_sampler, num_workers=config.loader_params['workers'])
+    val_loader = DataLoader(val_dataset, batch_size=config.loader_params['bs'], sampler=valid_sampler, num_workers=config.loader_params['workers'])
 
     return (train_loader, val_loader)
 
