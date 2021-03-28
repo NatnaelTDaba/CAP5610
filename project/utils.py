@@ -70,7 +70,10 @@ def get_model(confg):
     if config.MODEL == 'sanity':
         from models.sanity import Sanity
         model = Sanity()
-    
+    if config.MODEL == 'resnet18':
+        from models.resnet import resnet18
+        model = resnet18()
+        
     model.to(config.DEVICE)
     print("Model loaded to", config.DEVICE)
     return model

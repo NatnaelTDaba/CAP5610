@@ -42,7 +42,7 @@ optim_params = {
                     OPTIM: {'lr':0.001, 'momentum': 0.9}
                 }
 
-MODEL = 'sanity' 
+MODEL = 'resnet18' 
 
 LOSS = 'CE' # type of criterion; CE: cross entropy loss, 
 

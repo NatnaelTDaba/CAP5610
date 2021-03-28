@@ -15,11 +15,12 @@ def main(config):
     train_loader, valid_loader = get_loader(config)
     print("Done!")
     print("Generating multiples of single batch")
-    single_batch = [next(iter(train_loader))]*2
+    #single_batch = [next(iter(train_loader))]*2
     print("Done!")
     print("Loading model")
     model = get_model(config)
     print("Done!")
+    print(model)
     criterion = get_criterion(config.LOSS)
 
     optimizer = get_optimizer(config.OPTIM, model)
@@ -28,8 +29,8 @@ def main(config):
 
     trainer = Trainer(model, criterion, optimizer, 
                       config=config, 
-                      train_loader=single_batch, 
-                      valid_loader=single_batch,
+                      train_loader=train_loader, 
+                      valid_loader=valid_loader,
                       lr_scheduler=lr_scheduler)
 
     trainer.train()

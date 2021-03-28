@@ -28,8 +28,6 @@ class Trainer(object):
 		self.start_epoch = 1
 		self.epochs = config.EPOCH
 
-		
-
 		self.plots_dir, self.checkpoint_file, self.writer, self.resume_epoch = self._setup_logging(config)
 
 
@@ -65,7 +63,7 @@ class Trainer(object):
 				loss.item(),
 				self.optimizer.param_groups[0]['lr'],
 				epoch=epoch,
-				trained_samples=len(images)*(batch_idx + 1),
+				trained_samples=self.config.loader_params['bs']*(batch_idx + 1),
 				total_samples=self.total_train_samples))
 		
 			#update training loss for each iteration
