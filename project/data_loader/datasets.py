@@ -34,7 +34,7 @@ class DiabeticRetinopathyDataset(Dataset):
         Returns: Image and it's corresponding label.
         """
 
-        img_path = os.path.join(self.root_dir, self.csv.iloc[idx, 0]+'.jpeg')
+        img_path = os.path.join(self.root_dir, self.csv.iloc[idx, 0]+'.png')
         image = Image.open(img_path)
 
         if self.transforms:

@@ -30,7 +30,7 @@ def get_loader(config, test=False):
     val_dataset = DiabeticRetinopathyDataset(config.IMG_PATH, config.CSV_PATH, transforms=config.transforms['val'])
 
     # Create random samplers for our training and validation datasets.
-    targets = train_dataset.csv['level'].values
+    targets = train_dataset.csv['diagnosis'].values
     # Generate a unique set of training and valiadtion indices for sampling. 
     # Stratified sampling is used so that the validation set has the same class
     # distribtuion as the training set.

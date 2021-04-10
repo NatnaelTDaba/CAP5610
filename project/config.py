@@ -3,12 +3,15 @@ from torchvision import transforms
 
 from datetime import datetime
 
+DATASET = 'small'
+
+print('Training on', DATASET, 'data')
 
 WORK_DIR = '/home/abhijit/nat/CAP5610/project/'
-DATA_DIR = WORK_DIR+'data/'
-PLOTS_DIR = WORK_DIR+'runs/plots/'
+DATA_DIR = WORK_DIR+'data/small/' if DATASET == 'small' else WORK_DIR+'data/large/'
+PLOTS_DIR = WORK_DIR+'plots/'
 CHECKPOINT_PATH = WORK_DIR+'checkpoint/'
-CSV_PATH = DATA_DIR+'trainLabels.csv'
+CSV_PATH = DATA_DIR+'train.csv'
 IMG_PATH = DATA_DIR+'train/'
 TEST_IMG_PATH = DATA_DIR+'test/'
 LOG_DIR = WORK_DIR+'runs'
@@ -33,7 +36,7 @@ transforms = {
 loader_params = {
                     'bs': 128,
                     'shuffle': {'train': True, 'test': False},
-                    'workers': 4
+                    'workers': 0
                 }
 
 OPTIM = 'SGD'
@@ -61,3 +64,4 @@ RESUME = False
 STEP_SIZE = 20
 
 GAMMA = 0.1
+
