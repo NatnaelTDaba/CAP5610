@@ -1,24 +1,26 @@
 import argparse
 import sys
 
-from data_loader import get_loader
+from data_loader import get_loader, get_loader1
 import config
 from models import Sanity
 
-from utils import get_criterion, get_optimizer, get_model, get_scheduler
+from utils import get_criterion, get_optimizer, get_model, get_scheduler, init_weights2
 
 from trainer import Trainer
 
 def main(config):
     
     print("Loading data ...")
-    train_loader, valid_loader = get_loader(config)
+    train_loader, valid_loader = get_loader1(config)
     print("Done!")
-    print("Generating multiples of single batch")
-    #single_batch = [next(iter(train_loader))]*2
+    if config.SANITY:
+        print("Sanity mode...training on single batch")
+        train_loader = valid_loader = [next(iter(train_loader))]*2
     print("Done!")
     print("Loading model")
     model = get_model(config)
+    #model = init_weights2(model)
     print("Done!")
     print(model)
     criterion = get_criterion(config.LOSS)

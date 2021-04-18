@@ -1,6 +1,8 @@
 import torch 
 from torch.utils.data import Dataset, DataLoader
+from torchvision.datasets import ImageFolder
 from torch.utils.data.sampler import SubsetRandomSampler
+from torchsampler import ImbalancedDatasetSampler
 
 from sklearn.model_selection import train_test_split
 
@@ -26,8 +28,8 @@ def get_loader(config, test=False):
         return test_loader
 
     # Create training and validation datasets from our custom dataset class DiabeticRetinopathyDataset.
-    train_dataset = DiabeticRetinopathyDataset(config.IMG_PATH, config.CSV_PATH, transforms=config.transforms['train'])
-    val_dataset = DiabeticRetinopathyDataset(config.IMG_PATH, config.CSV_PATH, transforms=config.transforms['val'])
+    train_dataset = DiabeticRetinopathyDataset(config.TRAIN_IMG_PATH, config.CSV_PATH, transforms=config.transforms['train'])
+    val_dataset = DiabeticRetinopathyDataset(config.TRAIN_IMG_PATH, config.CSV_PATH, transforms=config.transforms['val'])
 
     # Create random samplers for our training and validation datasets.
     targets = train_dataset.csv['diagnosis'].values
@@ -44,4 +46,25 @@ def get_loader(config, test=False):
     val_loader = DataLoader(val_dataset, batch_size=config.loader_params['bs'], sampler=valid_sampler, num_workers=config.loader_params['workers'])
 
     return (train_loader, val_loader)
+
+def get_loader1(config, test=False):
+
+    if test:
+
+        test_set = ImageFolder(config.TRAIN_IMG_PATH, config.transforms['train'])
+        test_loader = DataLoader(test_set, config.loader_params['bs'], shuffle=config.loader_params['shuffle']['test'], num_workers=config.loader_params['workers'])
+
+        return test_loader
+
+    train_set = ImageFolder(config.TRAIN_IMG_PATH, config.transforms['train'])
+    if config.BALANCED:
+        print("Balanced training")
+        train_loader = DataLoader(train_set, config.loader_params['bs'], sampler=ImbalancedDatasetSampler(train_set), num_workers=config.loader_params['workers'])
+    else:
+        train_loader = DataLoader(train_set, config.loader_params['bs'], shuffle=config.loader_params['shuffle']['train'], num_workers=config.loader_params['workers'])
+
+    val_set = ImageFolder(config.VAL_IMG_PATH, config.transforms['val'])
+    val_loader = DataLoader(val_set, config.loader_params['bs'], shuffle=config.loader_params['shuffle']['val'], num_workers=config.loader_params['workers'])
+
+    return train_loader, val_loader
 

@@ -13,6 +13,9 @@ import config
 
 import matplotlib.pyplot as plt
 
+from sklearn.metrics import classification_report
+
+
 
 def save_object(filename, obj):
 
@@ -57,7 +60,9 @@ def get_optimizer(kind, model):
 	if kind == 'SGD':
 		return optim.SGD(model.parameters(), 
 						lr=config.optim_params[kind]['lr'], 
-						momentum=config.optim_params[kind]['momentum'])
+						momentum=config.optim_params[kind]['momentum'],
+                        nesterov=config.optim_params[kind]['nesterov'],
+                        weight_decay=config.optim_params[kind]['weight_decay'])
 
 def get_scheduler(optimizer):
 
@@ -145,3 +150,34 @@ def last_epoch(weights_folder):
     resume_epoch = int(weight_file.split('-')[1])
 
     return resume_epoch
+
+def save_report(targets, predictions, class_names, report_dir, epoch):
+
+    with open(os.path.join(report_dir, 'epoch_' +str(epoch)+'_report.txt'), 'w') as f:
+
+        print(classification_report(targets, predictions, target_names=class_names), file=f)
+
+def init_weights2(net):
+    """the weights of conv layer and fully connected layers 
+    are both initilized with Xavier algorithm, In particular,
+    we set the parameters to random values uniformly drawn from [-a, a]
+    where a = sqrt(6 * (din + dout)), for batch normalization 
+    layers, y=1, b=0, all bias initialized to 0.
+    """
+    for m in net.modules():
+        if isinstance(m, nn.Conv2d):
+            nn.init.xavier_uniform_(m.weight)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+            
+        elif isinstance(m, nn.BatchNorm2d):
+            nn.init.constant_(m.weight, 1)
+            nn.init.constant_(m.bias, 0)
+        
+        elif isinstance(m, nn.Linear):
+            nn.init.xavier_uniform_(m.weight)
+
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+
+    return net

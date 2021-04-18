@@ -1,12 +1,14 @@
 import os
 import time
-
+import sys
+sys.path.append('../')
 import torch
 from torch.utils.tensorboard import SummaryWriter
+import shutil
 
 from sklearn.metrics import confusion_matrix
 
-from utils import plot_confusion_matrix, most_recent_folder, most_recent_folder, most_recent_weights, last_epoch
+from utils import plot_confusion_matrix, most_recent_folder, most_recent_folder, most_recent_weights, last_epoch, save_report
 
 class Trainer(object):
 	"""
@@ -28,7 +30,7 @@ class Trainer(object):
 		self.start_epoch = 1
 		self.epochs = config.EPOCH
 
-		self.plots_dir, self.checkpoint_file, self.writer, self.resume_epoch = self._setup_logging(config)
+		self.logger_setup = self._setup_logging(config)
 
 
 	def _train_epoch(self, epoch):
@@ -55,9 +57,9 @@ class Trainer(object):
 			last_layer = list(self.model.children())[-1]
 			for name, para in last_layer.named_parameters():
 				if 'weight' in name:
-					self.writer.add_scalar('LastLayerGradients/grad_norm2_weights', para.grad.norm(), n_iter)
+					self.logger_setup['writer'].add_scalar('LastLayerGradients/grad_norm2_weights', para.grad.norm(), n_iter)
 				if 'bias' in name:
-					self.writer.add_scalar('LastLayerGradients/grad_norm2_bias', para.grad.norm(), n_iter)
+					self.logger_setup['writer'].add_scalar('LastLayerGradients/grad_norm2_bias', para.grad.norm(), n_iter)
 
 			print('Training Epoch: {epoch} [{trained_samples}/{total_samples}]\tLoss: {:0.4f}\tLR: {:0.6f}'.format(
 				loss.item(),
@@ -67,12 +69,12 @@ class Trainer(object):
 				total_samples=self.total_train_samples))
 		
 			#update training loss for each iteration
-			self.writer.add_scalar('Train/loss', loss.item(), n_iter)
+			self.logger_setup['writer'].add_scalar('Train/loss', loss.item(), n_iter)
 
 		for name, param in self.model.named_parameters():
 			layer, attr = os.path.splitext(name)
 			attr = attr[1:]
-			self.writer.add_histogram("{}/{}".format(layer, attr), param, epoch)
+			self.logger_setup['writer'].add_histogram("{}/{}".format(layer, attr), param, epoch)
 
 		finish = time.time()
 		print('epoch {} training time consumed: {:.2f}s'.format(epoch, finish - start))
@@ -112,9 +114,13 @@ class Trainer(object):
 		matrix = confusion_matrix(all_targets, all_predictions)
 
 		fig = plot_confusion_matrix(matrix, self.config.CLASS_NAMES, normalize=True)
-		fig.savefig(os.path.join(self.plots_dir,'confusion_matrix_epoch_'+str(epoch)+'.png'), bbox_inches='tight')
+		fig.savefig(os.path.join(self.logger_setup['plots_dir'],'confusion_matrix_epoch_'+str(epoch)+'.png'), bbox_inches='tight')
+		print("all targets",all_targets)
+		print("all predictions", all_predictions)
+		print("set(targets) - set(predictions)", set(all_targets)-set(all_predictions))
+		save_report(all_targets, all_predictions, self.config.CLASS_NAMES, self.logger_setup['reports_dir'], epoch)
 
-		self.writer.add_figure('Test/Confusion Matrix', fig, epoch)
+		self.logger_setup['writer'].add_figure('Test/Confusion Matrix', fig, epoch)
 
 		print('Evaluating Network.....')
 		print('Validation set: Epoch: {}, Average loss: {:.4f}, Accuracy: {:.4f}, Time consumed:{:.2f}s'.format(
@@ -124,12 +130,14 @@ class Trainer(object):
 			finish - start))
 		print()
 		if tb:
-			self.writer.add_scalar('Test/Average loss', valid_loss / self.total_valid_samples, epoch)
-			self.writer.add_scalar('Test/Accuracy', correct.float() / self.total_valid_samples, epoch)
+			self.logger_setup['writer'].add_scalar('Test/Average loss', valid_loss / self.total_valid_samples, epoch)
+			self.logger_setup['writer'].add_scalar('Test/Accuracy', correct.float() / self.total_valid_samples, epoch)
 
 		return correct.float() / self.total_valid_samples
 
 	def _setup_logging(self, config):
+
+		logger_setup = {}
 
 		if not os.path.exists(config.LOG_DIR):
 			os.mkdir(config.LOG_DIR)
@@ -137,13 +145,21 @@ class Trainer(object):
 		if not os.path.exists(config.PLOTS_DIR):
 			os.mkdir(config.PLOTS_DIR)
 		
-		plots_dir = os.path.join(config.PLOTS_DIR, config.MODEL+'/', config.TIME_NOW+'/')
+		logger_setup['plots_dir'] = os.path.join(config.PLOTS_DIR, config.MODEL+'/', config.TIME_NOW+'/')
 
 		if not os.path.exists(os.path.join(config.PLOTS_DIR, config.MODEL+'/')):
 			os.mkdir(os.path.join(config.PLOTS_DIR, config.MODEL +'/'))
 
-		if not os.path.exists(plots_dir):
-			os.mkdir(plots_dir)
+		if not os.path.exists(logger_setup['plots_dir']):
+			os.mkdir(logger_setup['plots_dir'])
+
+		logger_setup['reports_dir'] = os.path.join(config.REPORTS_DIR, config.MODEL+'/', config.TIME_NOW+'/')
+
+		if not os.path.exists(os.path.join(config.REPORTS_DIR, config.MODEL+'/')):
+			os.mkdir(os.path.join(config.REPORTS_DIR, config.MODEL+'/'))
+
+		if not os.path.exists(logger_setup['reports_dir']):
+			os.mkdir(logger_setup['reports_dir'])
 
 		if config.RESUME:
 			recent_folder = most_recent_folder(os.path.join(config.CHECKPOINT_PATH, config.MODEL), fmt=config.DATE_FORMAT)
@@ -158,9 +174,11 @@ class Trainer(object):
 		if not os.path.exists(checkpoint_path):
 			os.makedirs(checkpoint_path)
 
-		checkpoint_file = os.path.join(checkpoint_path, '{net}-{epoch}-{type}.pth')
-
-		writer = SummaryWriter(log_dir=os.path.join(config.LOG_DIR, config.MODEL, config.TIME_NOW))
+		logger_setup['checkpoint_file'] = os.path.join(checkpoint_path, '{net}-{epoch}-{type}.pth')
+		
+		logger_setup['writer'] = SummaryWriter(log_dir=os.path.join(config.LOG_DIR, config.MODEL, config.TIME_NOW))
+		
+		shutil.copy('config.py', os.path.join(config.LOG_DIR, config.MODEL, config.TIME_NOW))
 
 		if config.RESUME:
 			recent_weights_file = most_recent_weights(os.path.join(config.CHECKPOINT_PATH, config.MODEL, recent_folder))
@@ -173,8 +191,9 @@ class Trainer(object):
 			resume_epoch = last_epoch(os.path.join(config.CHECKPOINT_PATH, config.MODEL, recent_folder))
 		else:
 			resume_epoch=0
-
-		return plots_dir, checkpoint_file, writer, resume_epoch
+		logger_setup['resume_epoch'] = resume_epoch
+		
+		return logger_setup
 
 	def train(self):
 		"""
@@ -184,7 +203,7 @@ class Trainer(object):
 		for epoch in range(self.start_epoch, self.epochs + 1):
 
 			if self.config.RESUME:
-				if epoch <= self.resume_epoch:
+				if epoch <= self.logger_setup['resume_epoch']:
 					continue
 			
 			self._train_epoch(epoch)
@@ -192,12 +211,12 @@ class Trainer(object):
 			self.lr_scheduler.step()
 
 			if best_acc < acc:
-				weights_path = self.checkpoint_file.format(net=self.config.MODEL, epoch=epoch, type='best')
+				weights_path = self.logger_setup['checkpoint_file'].format(net=self.config.MODEL, epoch=epoch, type='best')
 				print('saving weights file to {}'.format(weights_path))
 				torch.save(self.model.state_dict(), weights_path)
 				best_acc = acc
 		
-		self.writer.close()
+		self.logger_setup['writer'].close()
 				
 	
 
