@@ -8,13 +8,13 @@ import shutil
 
 from sklearn.metrics import confusion_matrix
 
-from utils import plot_confusion_matrix, most_recent_folder, most_recent_folder, most_recent_weights, last_epoch, save_report
+from utils import plot_confusion_matrix, most_recent_folder, most_recent_folder, most_recent_weights, last_epoch, save_report, quadratic_weighted_kappa
 
 class Trainer(object):
 	"""
 	Trainer class
 	"""
-	def __init__(self, model, criterion, optimizer, config, train_loader, valid_loader, lr_scheduler):
+	def __init__(self, model, criterion, optimizer, config, train_loader, valid_loader, lr_scheduler, warmup_scheduler):
 
 		self.model = model
 		self.config = config
@@ -23,6 +23,7 @@ class Trainer(object):
 		self.criterion = criterion
 		self.optimizer = optimizer
 		self.lr_scheduler = lr_scheduler
+		self.warmup_scheduler = warmup_scheduler
 
 		self.batch_size = config.loader_params['bs']
 		self.total_train_samples = self.batch_size*len(train_loader)
@@ -70,6 +71,9 @@ class Trainer(object):
 		
 			#update training loss for each iteration
 			self.logger_setup['writer'].add_scalar('Train/loss', loss.item(), n_iter)
+			
+			if self.config.WARM_UP and (epoch <= self.config.WARM_EPOCH):
+				self.warmup_scheduler.step()
 
 		for name, param in self.model.named_parameters():
 			layer, attr = os.path.splitext(name)
@@ -119,7 +123,7 @@ class Trainer(object):
 		print("all predictions", all_predictions)
 		print("set(targets) - set(predictions)", set(all_targets)-set(all_predictions))
 		save_report(all_targets, all_predictions, self.config.CLASS_NAMES, self.logger_setup['reports_dir'], epoch)
-
+		weighted_kappa = quadratic_weighted_kappa(matrix)
 		self.logger_setup['writer'].add_figure('Test/Confusion Matrix', fig, epoch)
 
 		print('Evaluating Network.....')
@@ -132,8 +136,9 @@ class Trainer(object):
 		if tb:
 			self.logger_setup['writer'].add_scalar('Test/Average loss', valid_loss / self.total_valid_samples, epoch)
 			self.logger_setup['writer'].add_scalar('Test/Accuracy', correct.float() / self.total_valid_samples, epoch)
+			self.logger_setup['writer'].add_scalar('Test/Quadratic weighted kappa',  weighted_kappa, epoch)
 
-		return correct.float() / self.total_valid_samples
+		return (correct.float() / self.total_valid_samples, weighted_kappa)
 
 	def _setup_logging(self, config):
 
@@ -200,21 +205,30 @@ class Trainer(object):
 		Full training logic
 		"""
 		best_acc = 0.0
+		best_kappa = 0.0
 		for epoch in range(self.start_epoch, self.epochs + 1):
+
+			if self.config.WARM_UP and epoch > self.config.WARM_EPOCH:
+				self.lr_scheduler.step()
+
+			elif not self.config.WARM_UP:
+				self.lr_scheduler.step()
 
 			if self.config.RESUME:
 				if epoch <= self.logger_setup['resume_epoch']:
 					continue
 			
 			self._train_epoch(epoch)
-			acc = self._valid_epoch(epoch)
-			self.lr_scheduler.step()
+			acc, kappa = self._valid_epoch(epoch)
+			
+			
 
-			if best_acc < acc:
+			if best_acc < acc or best_kappa < kappa:
 				weights_path = self.logger_setup['checkpoint_file'].format(net=self.config.MODEL, epoch=epoch, type='best')
 				print('saving weights file to {}'.format(weights_path))
 				torch.save(self.model.state_dict(), weights_path)
 				best_acc = acc
+				best_kappa = kappa
 		
 		self.logger_setup['writer'].close()
 				

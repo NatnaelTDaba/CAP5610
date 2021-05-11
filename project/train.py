@@ -11,29 +11,27 @@ from trainer import Trainer
 
 def main(config):
     
-    print("Loading data ...")
     train_loader, valid_loader = get_loader1(config)
-    print("Done!")
+    print("Done!")    
     if config.SANITY:
         print("Sanity mode...training on single batch")
-        train_loader = valid_loader = [next(iter(train_loader))]*2
-    print("Done!")
-    print("Loading model")
+        train_loader = valid_loader = [next(iter(train_loader))]*10
     model = get_model(config)
-    #model = init_weights2(model)
+    model = init_weights2(model)
     print("Done!")
     print(model)
     criterion = get_criterion(config.LOSS)
 
     optimizer = get_optimizer(config.OPTIM, model)
 
-    lr_scheduler = get_scheduler(optimizer)
+    warmup_scheduler, lr_scheduler = get_scheduler(optimizer, config, len(train_loader))
 
     trainer = Trainer(model, criterion, optimizer, 
                       config=config, 
                       train_loader=train_loader, 
                       valid_loader=valid_loader,
-                      lr_scheduler=lr_scheduler)
+                      lr_scheduler=lr_scheduler,
+                      warmup_scheduler=warmup_scheduler)
 
     trainer.train()
     

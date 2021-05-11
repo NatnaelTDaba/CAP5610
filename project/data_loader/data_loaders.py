@@ -50,9 +50,9 @@ def get_loader(config, test=False):
 def get_loader1(config, test=False):
 
     if test:
-
-        test_set = ImageFolder(config.TRAIN_IMG_PATH, config.transforms['train'])
-        test_loader = DataLoader(test_set, config.loader_params['bs'], shuffle=config.loader_params['shuffle']['test'], num_workers=config.loader_params['workers'])
+        
+        test_set = ImageFolder(config.TEST_IMG_PATH, config.transforms['test'])
+        test_loader = DataLoader(test_set, batch_size=config.loader_params['bs'], shuffle=config.loader_params['shuffle']['test'], num_workers=config.loader_params['workers'])
 
         return test_loader
 
